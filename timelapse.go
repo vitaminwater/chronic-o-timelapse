@@ -11,6 +11,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+var dbx files.Client
+
+func init() {
+	token := MustGetenv("DBX_TOKEN")
+	config := dropbox.Config{
+		Token: token,
+	}
+
+	dbx = files.New(config)
+}
+
 func fu(e error) {
 	if e != nil {
 		logrus.Fatal(e)
@@ -33,20 +44,7 @@ func takePic() (string, error) {
 	return name, err
 }
 
-func main() {
-	token := MustGetenv("DBX_TOKEN")
-	name := MustGetenv("NAME")
-
-	config := dropbox.Config{
-		Token: token,
-	}
-	dbx := files.New(config)
-
-	local, err := takePic()
-	fu(err)
-
-	remote := fmt.Sprintf("%d.jpg", int32(time.Now().Unix()))
-
+func uploadPic(name, local, remote string) {
 	f, err := os.Open(local)
 	fu(err)
 
@@ -56,4 +54,17 @@ func main() {
 	fu(err)
 
 	logrus.Infof("Uploaded %s", p)
+}
+
+func main() {
+	name := MustGetenv("NAME")
+
+	remote := fmt.Sprintf("%d.jpg", int32(time.Now().Unix()))
+	local, err := takePic()
+	fu(err)
+
+	uploadPic(name, local, remote)
+	uploadPic(name, local, "latest.jpg")
+
+	fu(os.Remove(local))
 }
