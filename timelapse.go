@@ -37,9 +37,8 @@ func MustGetenv(name string) string {
 }
 
 func takePic() (string, error) {
-	t := time.Now().Unix()
-	name := fmt.Sprintf("%d.jpg", t)
-	cmd := exec.Command("/usr/bin/raspistill", "-o", name)
+	name := "latest.jpg"
+	cmd := exec.Command("/usr/bin/raspistill", "-vf", "-hf", "-q", "50", "-o", name)
 	err := cmd.Run()
 	return name, err
 }
@@ -50,6 +49,7 @@ func uploadPic(name, local, remote string) {
 
 	p := fmt.Sprintf("/%s/%s", name, remote)
 	ci := files.NewCommitInfo(p)
+	ci.Mode.Tag = "overwrite"
 	_, err = dbx.Upload(ci, f)
 	fu(err)
 
@@ -63,8 +63,7 @@ func main() {
 	local, err := takePic()
 	fu(err)
 
+	logrus.Info("Uploading files")
 	uploadPic(name, local, remote)
 	uploadPic(name, local, "latest.jpg")
-
-	fu(os.Remove(local))
 }
